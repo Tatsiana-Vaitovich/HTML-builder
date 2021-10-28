@@ -32,4 +32,6 @@ function writeFile() {
   });
 }
 
-module.exports.writeFile = writeFile;
+writeFile();
+
+// module.exports.writeFile = writeFile;

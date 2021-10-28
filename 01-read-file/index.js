@@ -29,5 +29,7 @@ function readFile() {
   readableStream.on('error', error => console.log('Error', error.message));
 }
 
+readFile();
 
-module.exports.readFile = readFile;
+
+// module.exports.readFile = readFile;

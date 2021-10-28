@@ -1,5 +1,6 @@
 {
   "name": "html-builder",
+  "main": "app.js",
   "version": "1.0.0",
   "description": "html-builder task for RSSchool",
   "scripts": {
