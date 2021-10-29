@@ -37,7 +37,7 @@ function getInformationAboutFiles(dir) {
       const data = path.parse(el);
       fs.stat(el, (err, stats) => {
         if (err) throw err;
-        stdout.write(`${data.name} - ${data.ext.slice(1)} - ${Math.round(stats['size']/1024)}kb \n`);
+        stdout.write(`${data.name} - ${data.ext.slice(1)} - ${Math.round(stats['size']/1000)}kb \n`);
       });
     });
   });

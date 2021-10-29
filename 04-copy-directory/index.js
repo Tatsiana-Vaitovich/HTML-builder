@@ -75,5 +75,3 @@ function copyDir (sourceDir, destDir) {
 const dir = path.join(__dirname, 'files');
 const newDir = path.join(__dirname, 'files-copy');
 copyDir(dir, newDir);
-
-// module.exports.copyDir = copyDir;
