@@ -1,8 +1,6 @@
 'use strict';
 const path = require('path');
 const fs = require('fs');
-// const modCopyDir = require('../04-copy-directory/index.js');
-// const modCreateBundle = require('../05-merge-styles/index.js');
 
 //функция которая получаем список файлов в папке
 function walk(dir, done) {
@@ -81,7 +79,7 @@ function copyDir (sourceDir, destDir) {
               next();
             });
           } else {
-            fs.copyFile(file, path.join(destDir, fileName), function(err, results) {
+            fs.copyFile(file, path.join(destDir, fileName), function(err) {
               if (err) throw err;
             });
             next();
@@ -91,72 +89,87 @@ function copyDir (sourceDir, destDir) {
     });
   }
 
-  //перед созданием копии очищаю предыдущую копию, если она была создана
-  const removeDirectory = (sourceDir, distDir) => {
-    try {
-      fs.rm(distDir, { recursive: true }, (err) => {
-        if (err) {
-          fs.mkdir(destDir, {recursive: true}, (err)=>{
-            if (err) console.log(`Error creating directory: ${err}`);
-          });        
-        } else {
-          // console.log('Directory has been removed!');
-        }
-        // Create new folder
-        fs.mkdir(distDir, {recursive:true}, (err)=>{
-          if (err) console.log(`Error creating directory: ${err}`);
-          //copy files into new created folder
-          copyFiles(sourceDir, distDir, function(err, results) {
-            if (err) throw err;
-            // console.log('Files have been copied!');
-          });
-        });
-      });
-    } catch (err) {
-      // console.log(err);
-    }
-  };
-  
-  //Start main script
-  removeDirectory(sourceDir, destDir);
-}
-
-function getComponents() {
-  //зайду в папку components и найду в ней все файлы
-} 
-
-
-function buildPage() {
-  //создать папку project-dist
-  const projectDist = path.join(__dirname, 'project-dist');
-  fs.mkdir(projectDist, {recursive: true}, err => {
-    if (err) throw err;
-
-    //todo создаю в данной папке собранный файл index.html
-    //заменить шаблонные теги в файле template.html с названиями файлов из папки components (пример:{{section}}) на содержимое одноимённых компонентов и сохраняет результат в project-dist/index.html.
-    const templateHtml = path.join(__dirname, 'template.html');
-    const readableStream = fs.createReadStream(templateHtml, 'utf-8');
-    let data = '';
-    readableStream.on('data', (chunk, err) => {
+  fs.mkdir(destDir, {recursive:true}, (err)=>{
+    if (err) console.log(`Error creating directory: ${err}`);
+    //copy files into new created folder
+    copyFiles(sourceDir, destDir, function(err) {
       if (err) throw err;
-      data = data + chunk;
-      //ищем в данной строке шаблонные теги
+      // console.log('Files have been copied!');
     });
-
-
-
-
-    //копирую папку assets со всем содержимым
-    const sourcedir = path.join(__dirname, 'assets');
-    const distDir = path.join(projectDist, 'assets');
-    copyDir(sourcedir, distDir);
-
-    //создаю в данной папке bundle.css
-    const stylesDir = path.join(__dirname, 'styles');
-    const stylesBundle = path.join(projectDist, 'style.css');
-    createBundle(stylesDir, stylesBundle);
   });
 }
 
-buildPage();
+function replaceElements (template) {
+  const components = path.join(__dirname, 'components');
+  const articles = path.join(components, 'articles.html');
+  const header = path.join(components, 'header.html');
+  const footer = path.join(components, 'footer.html');
+  fs.readFile(header, 'utf-8', (err, data) => {
+    if(err) console.log('err writting file');
+    //template.replace(('{{articles}}', 'g'), articlesData);
+    //template.replace(new RegExp('{{articles}}','g'), articlesData);
+    template = template.split('{{header}}').join(data);
+    fs.readFile(articles, 'utf-8', (err, data) => {
+      if(err) console.log('err writting file');
+      //template.replace(('{{articles}}', 'g'), articlesData);
+      //template.replace(new RegExp('{{articles}}','g'), articlesData);
+      template = template.split('{{articles}}').join(data);
+      fs.readFile(footer, 'utf-8', (err, data) => {
+        if(err) console.log('err writting file');
+        //template.replace(('{{articles}}', 'g'), articlesData);
+        //template.replace(new RegExp('{{articles}}','g'), articlesData);
+        template = template.split('{{footer}}').join(data);
+        fs.writeFile(path.join(__dirname, 'project-dist', 'index.html'), template, err => {
+          if (err) throw err;
+          console.log('index.html rewritten');
+        }); 
+      });
+    });
+  });
+}
+
+function createDirectory (dirName, cb) {
+  fs.rm(dirName, { recursive: true }, (err) => {
+    if (err) {
+      fs.mkdir(dirName, {recursive: true}, (err)=> {
+        if (err) console.log(`Error creating directory: ${err}`);
+        cb();
+      });
+    } else {
+      fs.mkdir(dirName, {recursive: true}, (err)=> {
+        if (err) console.log(`Error creating directory: ${err}`);
+        cb();
+      });
+    }
+  });
+}
+
+const projectDist = path.join(__dirname, 'project-dist');
+
+createDirectory(projectDist, buildPage);
+
+function buildPage() {
+  const sourceAssets = path.join(__dirname, 'assets');
+  const distAssets = path.join(projectDist, 'assets');
+  copyDir(sourceAssets, distAssets);
+
+  //создаю в данной папке bundle.css
+  const stylesDir = path.join(__dirname, 'styles');
+  const stylesBundle = path.join(projectDist, 'style.css');
+  createBundle(stylesDir, stylesBundle);
+
+  //создаю в данной папке собранный файл index.html
+  const templateHtml = path.join(__dirname, 'template.html');
+  const htmlCopy = path.join(projectDist, 'index.html');
+  fs.copyFile(templateHtml, htmlCopy, err => {
+    if (err) {
+      console.log('error creatting index.html');
+    }else {
+      fs.readFile(htmlCopy, 'utf-8', (err, data) => {
+        if (err) console.log('index.html is not written');
+        replaceElements(data);
+      });
+    }
+  });
+}
 
