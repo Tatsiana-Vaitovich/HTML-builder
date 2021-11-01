@@ -68,7 +68,6 @@ function copyDir (sourceDir, destDir) {
     }
   };
   
-  //Start main script
   removeDirectory(sourceDir, destDir);
 }
 
