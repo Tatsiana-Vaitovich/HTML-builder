@@ -106,19 +106,16 @@ function replaceElements (template) {
   const footer = path.join(components, 'footer.html');
   fs.readFile(header, 'utf-8', (err, data) => {
     if(err) console.log('err writting file');
-    //template.replace(('{{articles}}', 'g'), articlesData);
-    //template.replace(new RegExp('{{articles}}','g'), articlesData);
-    template = template.split('{{header}}').join(data);
+    template = template.replace(new RegExp('{{header}}','g'), data);
+    // template = template.split('{{header}}').join(data);
     fs.readFile(articles, 'utf-8', (err, data) => {
       if(err) console.log('err writting file');
-      //template.replace(('{{articles}}', 'g'), articlesData);
-      //template.replace(new RegExp('{{articles}}','g'), articlesData);
-      template = template.split('{{articles}}').join(data);
+      template = template.replace(new RegExp('{{articles}}','g'), data);
+      //template = template.split('{{articles}}').join(data);
       fs.readFile(footer, 'utf-8', (err, data) => {
         if(err) console.log('err writting file');
-        //template.replace(('{{articles}}', 'g'), articlesData);
-        //template.replace(new RegExp('{{articles}}','g'), articlesData);
-        template = template.split('{{footer}}').join(data);
+        template = template.replace(new RegExp('{{footer}}','g'), data);
+        //template = template.split('{{footer}}').join(data);
         fs.writeFile(path.join(__dirname, 'project-dist', 'index.html'), template, err => {
           if (err) throw err;
           console.log('index.html rewritten');
