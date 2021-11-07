@@ -138,10 +138,10 @@ function getFilesList (dir, done) {
             if(err) console.log('err writting file');
             template = template.replace('{{' + name + '}}', data);
             fs.writeFile(path.join(__dirname, 'project-dist', 'index.html'), template, err => {
+              if (!--pending) done(null);
               if (err) throw err;
             }); 
           });
-          if (!--pending) done(null);
         }
       });
     });
@@ -157,17 +157,17 @@ function replaceElements () {
 
 function createDirectory (dirName, cb) {
   fs.rm(dirName, { recursive: true }, (err) => {
-    if (err) {
+    // if (err) {
+    //   fs.mkdir(dirName, {recursive: true}, (err)=> {
+    //     if (err) console.log(`Error creating directory: ${err}`);
+    //     cb();
+    //   });
+    // } else {
       fs.mkdir(dirName, {recursive: true}, (err)=> {
         if (err) console.log(`Error creating directory: ${err}`);
         cb();
       });
-    } else {
-      fs.mkdir(dirName, {recursive: true}, (err)=> {
-        if (err) console.log(`Error creating directory: ${err}`);
-        cb();
-      });
-    }
+    // }
   });
 }
 
