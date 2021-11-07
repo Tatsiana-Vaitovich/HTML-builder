@@ -2,6 +2,8 @@
 const path = require('path');
 const fs = require('fs');
 
+let template = '';
+
 //функция которая получаем список файлов в папке
 function walk(dir, done) {
   let results = [];
@@ -53,7 +55,7 @@ function createBundle(dir, bundle) {
   walk(dir, createBundleFile);
 }
 
-function copyDir (sourceDir, destDir) {
+function copyDir(sourceDir, destDir) {
 
   function copyFiles(sourceDir, destDir, done) {
     let results = [];
@@ -94,34 +96,62 @@ function copyDir (sourceDir, destDir) {
     //copy files into new created folder
     copyFiles(sourceDir, destDir, function(err) {
       if (err) throw err;
-      // console.log('Files have been copied!');
+      //создаю в данной папке bundle.css
+      const stylesDir = path.join(__dirname, 'styles');
+      const stylesBundle = path.join(projectDist, 'style.css');
+      createBundle(stylesDir, stylesBundle);
+
+      //создаю в данной папке собранный файл index.html
+      const templateHtml = path.join(__dirname, 'template.html');
+      const htmlCopy = path.join(projectDist, 'index.html');
+      fs.copyFile(templateHtml, htmlCopy, err => {
+        if (err) {
+          console.log('error creatting index.html');
+        }else {
+          fs.readFile(htmlCopy, 'utf-8', (err, data) => {
+            if (err) console.log('index.html is not written');
+            template = data;
+            replaceElements();
+          });
+        }
+      });
     });
   });
 }
 
-function replaceElements (template) {
-  const components = path.join(__dirname, 'components');
-  const articles = path.join(components, 'articles.html');
-  const header = path.join(components, 'header.html');
-  const footer = path.join(components, 'footer.html');
-  fs.readFile(header, 'utf-8', (err, data) => {
-    if(err) console.log('err writting file');
-    template = template.replace(new RegExp('{{header}}','g'), data);
-    // template = template.split('{{header}}').join(data);
-    fs.readFile(articles, 'utf-8', (err, data) => {
-      if(err) console.log('err writting file');
-      template = template.replace(new RegExp('{{articles}}','g'), data);
-      //template = template.split('{{articles}}').join(data);
-      fs.readFile(footer, 'utf-8', (err, data) => {
-        if(err) console.log('err writting file');
-        template = template.replace(new RegExp('{{footer}}','g'), data);
-        //template = template.split('{{footer}}').join(data);
-        fs.writeFile(path.join(__dirname, 'project-dist', 'index.html'), template, err => {
-          if (err) throw err;
-          console.log('index.html rewritten');
-        }); 
+function getFilesList (dir, done) {
+  fs.readdir(dir, function(err, list) {
+    if (err) return done(err);
+    let pending = list.length;
+    if (!pending) return done(null);
+    list.forEach(function(file) {
+      file = path.resolve(dir, file);
+      fs.stat(file, function(err, stat) {
+        if (stat && stat.isDirectory()) {
+          getFilesList(file, function(err, res) {
+            if (!--pending) done(null);
+          });
+        } else {
+          const data = path.parse(file);
+          const name = data.name;
+          fs.readFile(file, 'utf-8', (err, data) => {
+            if(err) console.log('err writting file');
+            template = template.replace('{{' + name + '}}', data);
+            fs.writeFile(path.join(__dirname, 'project-dist', 'index.html'), template, err => {
+              if (err) throw err;
+            }); 
+          });
+          if (!--pending) done(null);
+        }
       });
     });
+  });
+}
+
+function replaceElements () {
+  const components = path.join(__dirname, 'components');
+  getFilesList(components, (err) => {
+    if (err) throw err;
   });
 }
 
@@ -149,24 +179,4 @@ function buildPage() {
   const sourceAssets = path.join(__dirname, 'assets');
   const distAssets = path.join(projectDist, 'assets');
   copyDir(sourceAssets, distAssets);
-
-  //создаю в данной папке bundle.css
-  const stylesDir = path.join(__dirname, 'styles');
-  const stylesBundle = path.join(projectDist, 'style.css');
-  createBundle(stylesDir, stylesBundle);
-
-  //создаю в данной папке собранный файл index.html
-  const templateHtml = path.join(__dirname, 'template.html');
-  const htmlCopy = path.join(projectDist, 'index.html');
-  fs.copyFile(templateHtml, htmlCopy, err => {
-    if (err) {
-      console.log('error creatting index.html');
-    }else {
-      fs.readFile(htmlCopy, 'utf-8', (err, data) => {
-        if (err) console.log('index.html is not written');
-        replaceElements(data);
-      });
-    }
-  });
 }
-
