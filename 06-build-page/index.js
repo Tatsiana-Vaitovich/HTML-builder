@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 
 let template = '';
+let componentsArr = [];
+const components = path.join(__dirname, 'components');
 
 //функция которая получаем список файлов в папке
 function walk(dir, done) {
@@ -111,7 +113,7 @@ function copyDir(sourceDir, destDir) {
           fs.readFile(htmlCopy, 'utf-8', (err, data) => {
             if (err) console.log('index.html is not written');
             template = data;
-            replaceElements();
+            getFilesList(components, replaceElements);
           });
         }
       });
@@ -119,55 +121,52 @@ function copyDir(sourceDir, destDir) {
   });
 }
 
-function getFilesList (dir, done) {
+function getFilesList(dir, done) {
   fs.readdir(dir, function(err, list) {
     if (err) return done(err);
     let pending = list.length;
-    if (!pending) return done(null);
+    if (!pending) return done(null, componentsArr.length);
     list.forEach(function(file) {
       file = path.resolve(dir, file);
       fs.stat(file, function(err, stat) {
         if (stat && stat.isDirectory()) {
           getFilesList(file, function(err, res) {
-            if (!--pending) done(null);
+            componentsArr = componentsArr.concat(res);
+            if (!--pending) done(null, componentsArr.length);
           });
         } else {
-          const data = path.parse(file);
-          const name = data.name;
-          fs.readFile(file, 'utf-8', (err, data) => {
-            if(err) console.log('err writting file');
-            template = template.replace('{{' + name + '}}', data);
-            fs.writeFile(path.join(__dirname, 'project-dist', 'index.html'), template, err => {
-              if (!--pending) done(null);
-              if (err) throw err;
-            }); 
-          });
+          componentsArr.push(file);
+          if (!--pending) done(null, componentsArr.length);
         }
       });
     });
   });
 }
 
-function replaceElements () {
-  const components = path.join(__dirname, 'components');
-  getFilesList(components, (err) => {
-    if (err) throw err;
-  });
+function replaceElements (err, result) {
+  if (err) throw err;
+  if (result !== 0) {
+    result--;
+    const data = path.parse(componentsArr[result]);
+    const name = data.name;
+    fs.readFile(componentsArr[result], 'utf-8', (err, data) => {
+      if(err) console.log('err writting file');
+      template = template.replace('{{' + name + '}}', data);
+      replaceElements(err, result);
+    });
+  } else {
+    fs.writeFile(path.join(__dirname, 'project-dist', 'index.html'), template, err => {
+      if (err) throw err;
+    }); 
+  }
 }
 
 function createDirectory (dirName, cb) {
   fs.rm(dirName, { recursive: true }, (err) => {
-    // if (err) {
-    //   fs.mkdir(dirName, {recursive: true}, (err)=> {
-    //     if (err) console.log(`Error creating directory: ${err}`);
-    //     cb();
-    //   });
-    // } else {
-      fs.mkdir(dirName, {recursive: true}, (err)=> {
-        if (err) console.log(`Error creating directory: ${err}`);
-        cb();
-      });
-    // }
+    fs.mkdir(dirName, {recursive: true}, (err)=> {
+      if (err) console.log(`Error creating directory: ${err}`);
+      cb();
+    });
   });
 }
 
